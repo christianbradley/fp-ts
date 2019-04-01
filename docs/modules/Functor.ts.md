@@ -36,6 +36,17 @@ Instances must satisfy the following laws:
 - [FunctorComposition22C (interface)](#functorcomposition22c-interface)
 - [FunctorComposition2C1 (interface)](#functorcomposition2c1-interface)
 - [FunctorComposition3C1 (interface)](#functorcomposition3c1-interface)
+- [AnyFunctor (type alias)](#anyfunctor-type-alias)
+- [AnyFunctor1 (type alias)](#anyfunctor1-type-alias)
+- [AnyFunctor2 (type alias)](#anyfunctor2-type-alias)
+- [AnyFunctor2C (type alias)](#anyfunctor2c-type-alias)
+- [AnyFunctor3 (type alias)](#anyfunctor3-type-alias)
+- [AnyFunctor3C (type alias)](#anyfunctor3c-type-alias)
+- [AnyFunctor4 (type alias)](#anyfunctor4-type-alias)
+- [CaseOfFunctor (type alias)](#caseoffunctor-type-alias)
+- [Lift (type alias)](#lift-type-alias)
+- [Lifted (type alias)](#lifted-type-alias)
+- [TypeOfFunctor (type alias)](#typeoffunctor-type-alias)
 - [flap (function)](#flap-function)
 - [getFunctorComposition (function)](#getfunctorcomposition-function)
 - [lift (function)](#lift-function)
@@ -216,6 +227,133 @@ export interface FunctorComposition3C1<F extends URIS3, G extends URIS, UF, LF> 
 }
 ```
 
+# AnyFunctor (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor =
+  | AnyFunctor4
+  | AnyFunctor3C
+  | AnyFunctor3
+  | AnyFunctor2C
+  | AnyFunctor2
+  | AnyFunctor1
+  | Functor<any>
+```
+
+# AnyFunctor1 (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor1 = { [URI in URIS]: Functor1<URI> }[URIS]
+```
+
+# AnyFunctor2 (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor2 = { [URI in URIS2]: Functor2<URI> }[URIS2]
+```
+
+# AnyFunctor2C (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor2C = { [URI in URIS2]: Functor2C<URI, any> }[URIS2]
+```
+
+# AnyFunctor3 (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor3 = { [URI in URIS3]: Functor3<URI> }[URIS3]
+```
+
+# AnyFunctor3C (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor3C = { [URI in URIS3]: Functor3C<URI, any, any> }[URIS3]
+```
+
+# AnyFunctor4 (type alias)
+
+**Signature**
+
+```ts
+export type AnyFunctor4 = { [URI in URIS4]: Functor4<URI> }[URIS4]
+```
+
+# CaseOfFunctor (type alias)
+
+**Signature**
+
+```ts
+export type CaseOfFunctor<
+  F extends AnyFunctor,
+  CaseFunctor4,
+  CaseFunctor3,
+  CaseFunctor2,
+  CaseElse
+> = F extends AnyFunctor4
+  ? CaseFunctor4
+  : F extends AnyFunctor3
+  ? CaseFunctor3
+  : F extends AnyFunctor2
+  ? CaseFunctor2
+  : CaseElse
+```
+
+# Lift (type alias)
+
+**Signature**
+
+```ts
+export type Lift<F extends AnyFunctor> = <A, B>(f: (a: A) => B) => Lifted<F, A, B>
+```
+
+# Lifted (type alias)
+
+**Signature**
+
+```ts
+export type Lifted<F extends AnyFunctor, A, B> = CaseOfFunctor<
+  F,
+  <X, U, L>(fa: TypeOfFunctor<F, X, U, L, A>) => TypeOfFunctor<F, X, U, L, B>,
+  <U, L>(fa: TypeOfFunctor<F, never, U, L, A>) => TypeOfFunctor<F, never, U, L, B>,
+  <L>(fa: TypeOfFunctor<F, never, never, L, A>) => TypeOfFunctor<F, never, never, L, B>,
+  (fa: TypeOfFunctor<F, never, never, never, A>) => TypeOfFunctor<F, never, never, never, B>
+>
+```
+
+# TypeOfFunctor (type alias)
+
+**Signature**
+
+```ts
+export type TypeOfFunctor<F extends AnyFunctor, X, U, L, A> = F extends Functor4<infer URI>
+  ? Type4<URI, X, U, L, A>
+  : F extends Functor3C<infer URI, infer U, infer L>
+  ? Type3<URI, U, L, A>
+  : F extends Functor2C<infer URI, infer L>
+  ? Type2<URI, L, A>
+  : F extends Functor3<infer URI>
+  ? Type3<URI, U, L, A>
+  : F extends Functor2<infer URI>
+  ? Type2<URI, L, A>
+  : F extends Functor1<infer URI>
+  ? Type<URI, A>
+  : F extends Functor<infer URI>
+  ? HKT<URI, A>
+  : never
+```
+
 # flap (function)
 
 Apply a value in a computational context to a value in no context. Generalizes `flip`
@@ -290,20 +428,7 @@ Lift a function of one argument to a function which accepts and returns values w
 **Signature**
 
 ```ts
-export function lift<F extends URIS3>(
-  F: Functor3<F>
-): <A, B>(f: (a: A) => B) => <U, L>(fa: Type3<F, U, L, A>) => Type3<F, U, L, B>
-export function lift<F extends URIS3, U, L>(
-  F: Functor3C<F, U, L>
-): <A, B>(f: (a: A) => B) => (fa: Type3<F, U, L, A>) => Type3<F, U, L, B>
-export function lift<F extends URIS2>(
-  F: Functor2<F>
-): <A, B>(f: (a: A) => B) => <L>(fa: Type2<F, L, A>) => Type2<F, L, B>
-export function lift<F extends URIS2, L>(
-  F: Functor2C<F, L>
-): <A, B>(f: (a: A) => B) => (fa: Type2<F, L, A>) => Type2<F, L, B>
-export function lift<F extends URIS>(F: Functor1<F>): <A, B>(f: (a: A) => B) => (fa: Type<F, A>) => Type<F, B>
-export function lift<F>(F: Functor<F>): <A, B>(f: (a: A) => B) => (fa: HKT<F, A>) => HKT<F, B> { ... }
+export function lift<F extends AnyFunctor>(F: F): Lift<F> { ... }
 ```
 
 Added in v1.0.0

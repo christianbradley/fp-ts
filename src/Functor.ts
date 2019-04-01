@@ -53,6 +53,43 @@ export interface Functor3C<F extends URIS3, U, L> {
   readonly map: <A, B>(fa: Type3<F, U, L, A>, f: (a: A) => B) => Type3<F, U, L, B>
 }
 
+export type AnyFunctor4 = { [URI in URIS4]: Functor4<URI> }[URIS4]
+export type AnyFunctor3C = { [URI in URIS3]: Functor3C<URI, any, any> }[URIS3]
+export type AnyFunctor3 = { [URI in URIS3]: Functor3<URI> }[URIS3]
+export type AnyFunctor2C = { [URI in URIS2]: Functor2C<URI, any> }[URIS2]
+export type AnyFunctor2 = { [URI in URIS2]: Functor2<URI> }[URIS2]
+export type AnyFunctor1 = { [URI in URIS]: Functor1<URI> }[URIS]
+export type AnyFunctor =
+  | AnyFunctor4
+  | AnyFunctor3C
+  | AnyFunctor3
+  | AnyFunctor2C
+  | AnyFunctor2
+  | AnyFunctor1
+  | Functor<any>
+
+export type TypeOfFunctor<F extends AnyFunctor, X, U, L, A> = F extends Functor4<infer URI>
+  ? Type4<URI, X, U, L, A>
+  : F extends Functor3C<infer URI, infer U, infer L>
+    ? Type3<URI, U, L, A>
+    : F extends Functor2C<infer URI, infer L>
+      ? Type2<URI, L, A>
+      : F extends Functor3<infer URI>
+        ? Type3<URI, U, L, A>
+        : F extends Functor2<infer URI>
+          ? Type2<URI, L, A>
+          : F extends Functor1<infer URI> ? Type<URI, A> : F extends Functor<infer URI> ? HKT<URI, A> : never
+
+export type CaseOfFunctor<
+  F extends AnyFunctor,
+  CaseFunctor4,
+  CaseFunctor3,
+  CaseFunctor2,
+  CaseElse
+> = F extends AnyFunctor4
+  ? CaseFunctor4
+  : F extends AnyFunctor3 ? CaseFunctor3 : F extends AnyFunctor2 ? CaseFunctor2 : CaseElse
+
 export interface FunctorComposition<F, G> {
   readonly map: <A, B>(fa: HKT<F, HKT<G, A>>, f: (a: A) => B) => HKT<F, HKT<G, B>>
 }
@@ -89,26 +126,23 @@ export interface FunctorComposition3C1<F extends URIS3, G extends URIS, UF, LF> 
   readonly map: <A, B>(fa: Type3<F, UF, LF, Type<G, A>>, f: (a: A) => B) => Type3<F, UF, LF, Type<G, B>>
 }
 
+export type Lifted<F extends AnyFunctor, A, B> = CaseOfFunctor<
+  F,
+  <X, U, L>(fa: TypeOfFunctor<F, X, U, L, A>) => TypeOfFunctor<F, X, U, L, B>,
+  <U, L>(fa: TypeOfFunctor<F, never, U, L, A>) => TypeOfFunctor<F, never, U, L, B>,
+  <L>(fa: TypeOfFunctor<F, never, never, L, A>) => TypeOfFunctor<F, never, never, L, B>,
+  (fa: TypeOfFunctor<F, never, never, never, A>) => TypeOfFunctor<F, never, never, never, B>
+>
+
+export type Lift<F extends AnyFunctor> = <A, B>(f: (a: A) => B) => Lifted<F, A, B>
+
 /**
  * Lift a function of one argument to a function which accepts and returns values wrapped with the type constructor `F`
  *
  * @since 1.0.0
  */
-export function lift<F extends URIS3>(
-  F: Functor3<F>
-): <A, B>(f: (a: A) => B) => <U, L>(fa: Type3<F, U, L, A>) => Type3<F, U, L, B>
-export function lift<F extends URIS3, U, L>(
-  F: Functor3C<F, U, L>
-): <A, B>(f: (a: A) => B) => (fa: Type3<F, U, L, A>) => Type3<F, U, L, B>
-export function lift<F extends URIS2>(
-  F: Functor2<F>
-): <A, B>(f: (a: A) => B) => <L>(fa: Type2<F, L, A>) => Type2<F, L, B>
-export function lift<F extends URIS2, L>(
-  F: Functor2C<F, L>
-): <A, B>(f: (a: A) => B) => (fa: Type2<F, L, A>) => Type2<F, L, B>
-export function lift<F extends URIS>(F: Functor1<F>): <A, B>(f: (a: A) => B) => (fa: Type<F, A>) => Type<F, B>
-export function lift<F>(F: Functor<F>): <A, B>(f: (a: A) => B) => (fa: HKT<F, A>) => HKT<F, B>
-export function lift<F>(F: Functor<F>): <A, B>(f: (a: A) => B) => (fa: HKT<F, A>) => HKT<F, B> {
+export function lift<F extends AnyFunctor>(F: F): Lift<F>
+export function lift<URI>(F: Functor<URI>): Lift<Functor<URI>> {
   return f => fa => F.map(fa, f)
 }
 
